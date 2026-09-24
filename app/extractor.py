@@ -2,9 +2,8 @@
 
 File path in, plain text + per-line confidences out. Images go straight
 to the recognizer; PDF pages are rendered with PyMuPDF and read page by
-page (first N max). The import stays lazy so processes that never
-extract pay nothing for model init; the API server preloads it on
-startup (see app.main lifespan) so the GPU model is warm before the
+page (first N max). Model init stays lazy (singleton, warmed on server
+startup via app.main lifespan) so the GPU model is ready before the
 first request.
 
 Device selection via OCR_DEVICE env (default "auto"):
@@ -18,8 +17,28 @@ with added confidence scores + metrics for the fyllo-ocr test API.
 """
 import logging
 import os
+import shutil
+import subprocess
 import tempfile
 import time
+
+import fitz  # PyMuPDF: PDF page rendering
+from PIL import Image
+
+try:
+    import torch  # noqa: F401  (torch DLLs must load before paddle on Windows)
+except ImportError:
+    torch = None  # type: ignore[assignment]  # optional on Linux/Docker
+
+try:
+    import paddle
+except ImportError:
+    paddle = None  # type: ignore[assignment]  # only used for CUDA detection
+
+try:
+    from paddleocr import PaddleOCR
+except ImportError:
+    PaddleOCR = None  # type: ignore[assignment]  # surfaced as error in get_ocr()
 
 logger = logging.getLogger("fyllo_ocr")
 
@@ -37,26 +56,21 @@ _ocr_device = None
 
 def _cuda_available() -> bool:
     """True if an NVIDIA GPU is usable. Cheap checks first."""
-    try:
-        import torch
-
-        if torch.cuda.is_available():
-            return True
-    except ImportError:
-        pass
-    try:
-        import paddle
-
-        # paddle.device.cuda.device_count() exists on PaddlePaddle 3.x
-        if paddle.device.cuda.device_count() > 0:
-            return True
-    except Exception:
-        pass
+    if torch is not None:
+        try:
+            if torch.cuda.is_available():
+                return True
+        except Exception:
+            pass
+    if paddle is not None:
+        try:
+            # paddle.device.cuda.device_count() exists on PaddlePaddle 3.x
+            if paddle.device.cuda.device_count() > 0:
+                return True
+        except Exception:
+            pass
     # Last resort: nvidia-smi present (driver-level, no framework needed).
     try:
-        import shutil
-        import subprocess
-
         if shutil.which("nvidia-smi"):
             subprocess.run(
                 ["nvidia-smi", "-L"],
@@ -101,13 +115,10 @@ def get_ocr(device: str | None = None):
     """
     global _ocr, _ocr_device
     if _ocr is None:
-        try:
-            import torch  # noqa: F401  (torch DLLs before paddle on Windows)
-        except ImportError:
-            # Optional on Linux/Docker; PaddleOCR works without it.
-            pass
-
-        from paddleocr import PaddleOCR
+        if PaddleOCR is None:
+            raise RuntimeError(
+                "PaddleOCR is not installed. Install it with: pip install -r requirements.txt"
+            )
 
         resolved = resolve_device(device)
         _ocr_device = resolved
@@ -143,8 +154,6 @@ def preload_model() -> str:
 
 def _render_pdf_pages(file_path: str, dpi: int = 200, max_pages: int = 3):
     """Render the first max_pages PDF pages to temp PNGs. Caller deletes."""
-    import fitz
-
     paths = []
     with fitz.open(file_path) as doc:
         for page in list(doc)[:max_pages]:
@@ -157,8 +166,6 @@ def _render_pdf_pages(file_path: str, dpi: int = 200, max_pages: int = 3):
 
 def _cap_size(img_path: str):
     """Shrink a copy to INFER_LONG_EDGE; originals pass through untouched."""
-    from PIL import Image
-
     img = Image.open(img_path)
     s = min(1.0, INFER_LONG_EDGE / max(img.width, img.height))
     if s >= 1.0:
