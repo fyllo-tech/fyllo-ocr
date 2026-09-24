@@ -77,8 +77,13 @@ Env:
 
 ```bash
 # needs NVIDIA drivers + nvidia-container-toolkit
-docker run --gpus all -p 8000:8000 -e OCR_DEVICE=auto fyllo-ocr
+docker build -t fyllo-ocr .
+docker build -f Dockerfile.gpu -t fyllo-ocr:gpu .
+docker run --gpus all -p 8000:8000 -e OCR_DEVICE=gpu:0 fyllo-ocr:gpu
 ```
 
-For full GPU speed install the matching CUDA build inside the image
-(see `requirements.txt`, e.g. `paddlepaddle-gpu` cu118/cu126).
+`Dockerfile.gpu` adds `paddlepaddle-gpu==3.3.1` (cu118) on top of the base
+image. Verified on an A10G (g5.xlarge, driver 550 / CUDA 12.4) with
+`paddleocr==3.7.0` + `paddlex==3.7.2`. `paddlepaddle-gpu==3.0.0` does not
+work with these versions: every page fails with a pir `strides` attribute error
+and `/parse` returns empty text.

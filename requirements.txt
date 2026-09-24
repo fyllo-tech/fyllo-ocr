@@ -1,6 +1,9 @@
 fastapi>=0.110
 uvicorn[standard]>=0.29
-paddleocr>=3.0,<4.0
+# Pinned: newer paddleocr/paddlex pull newer models (PP-OCRv6) that need a
+# matching paddlepaddle-gpu; 3.7.0 + 3.7.2 verified with paddlepaddle-gpu 3.3.1.
+paddleocr==3.7.0
+paddlex==3.7.2
 onnxruntime>=1.17
 pymupdf>=1.23
 Pillow>=10.0
@@ -13,8 +16,9 @@ numpy>=1.24
 # --- GPU notes ---
 # For NVIDIA GPU inference, install the CUDA-enabled PaddlePaddle build
 # matching your host CUDA (11.8 or 12.x), e.g.:
-#   python -m pip install paddlepaddle-gpu==3.0.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
-# and run the container with GPU access (docker run --gpus all ...).
+#   python -m pip install paddlepaddle-gpu==3.3.1 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
+# (3.0.0 fails on the PP-OCRv6 models with a pir "strides" attribute error;
+# Dockerfile.gpu does this) and run the container with GPU access (docker run --gpus all ...).
 # Set OCR_DEVICE=gpu:0 (default OCR_DEVICE=auto already picks GPU when
 # torch.cuda / paddle / nvidia-smi reports one). No requirements change
 # is needed for auto-detect; only the paddlepaddle-gpu wheel + drivers.

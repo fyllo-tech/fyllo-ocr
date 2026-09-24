@@ -1,0 +1,6 @@
+# GPU image: base image + CUDA PaddlePaddle. Build the base first:
+#   docker build -t fyllo-ocr . && docker build -f Dockerfile.gpu -t fyllo-ocr:gpu .
+# cu118 wheel runs on any driver >= 520 (verified on driver 550 / A10G).
+FROM fyllo-ocr
+RUN pip install paddlepaddle-gpu==3.3.1 \
+    -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
