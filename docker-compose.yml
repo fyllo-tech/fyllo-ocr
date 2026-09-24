@@ -1,0 +1,18 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MAX_UPLOAD_MB=20
+      - OCR_DEVICE=auto # cpu | gpu:0 | cuda | npu:0 ...; auto = GPU if CUDA available
+      - OCR_PRELOAD=1 # 0 to skip startup model warmup
+    restart: unless-stopped
+    # Uncomment for NVIDIA GPU access (needs nvidia-container-toolkit):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]

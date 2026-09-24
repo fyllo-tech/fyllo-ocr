@@ -1,0 +1,20 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+paddleocr>=3.0,<4.0
+onnxruntime>=1.17
+pymupdf>=1.23
+Pillow>=10.0
+python-multipart>=0.0.9
+numpy>=1.24
+# torch is only needed to preload DLLs on Windows (see extractor.get_ocr).
+# It is optional on Linux/Docker; uncomment if you deploy on Windows.
+# torch --index-url https://download.pytorch.org/whl/cpu
+
+# --- GPU notes ---
+# For NVIDIA GPU inference, install the CUDA-enabled PaddlePaddle build
+# matching your host CUDA (11.8 or 12.x), e.g.:
+#   python -m pip install paddlepaddle-gpu==3.0.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
+# and run the container with GPU access (docker run --gpus all ...).
+# Set OCR_DEVICE=gpu:0 (default OCR_DEVICE=auto already picks GPU when
+# torch.cuda / paddle / nvidia-smi reports one). No requirements change
+# is needed for auto-detect; only the paddlepaddle-gpu wheel + drivers.
