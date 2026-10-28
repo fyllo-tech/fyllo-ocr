@@ -7,6 +7,13 @@ services:
       - MAX_UPLOAD_MB=20
       - OCR_DEVICE=auto # cpu | gpu:0 | cuda | npu:0 ...; auto = GPU if CUDA available
       - OCR_PRELOAD=1 # 0 to skip startup model warmup
+      - PEST_MODEL_DIR=/code/pest_models
+      - PEST_DEVICE=auto # cpu | cuda:0; auto = GPU if CUDA available
+      - PEST_MAX_UPLOAD_MB=60
+      - PEST_PRELOAD=1 # 0 to skip loading pest models
+    volumes:
+      # copy of pest-trap/pest_detection/model_r24 (.pt files + model_config.json)
+      - ./pest_models:/code/pest_models:ro
     restart: unless-stopped
     # Uncomment for NVIDIA GPU access (needs nvidia-container-toolkit):
     # deploy:
