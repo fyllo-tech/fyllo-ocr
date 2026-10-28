@@ -17,6 +17,10 @@ numpy>=1.24
 torch==2.6.0
 torchvision==0.21.0
 ultralytics==8.4.120
+# ultralytics pulls opencv-python unpinned (5.x); paddlex brings
+# opencv-contrib-python 4.10.0.84 and both install cv2. Same version so
+# whichever wins, OCR keeps its cv2.
+opencv-python==4.10.0.84
 
 # --- GPU notes ---
 # For NVIDIA GPU inference, install the CUDA-enabled PaddlePaddle build
