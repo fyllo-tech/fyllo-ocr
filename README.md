@@ -73,6 +73,34 @@ Env:
   PaddleInference on GPU. Override to force e.g. `onnxruntime`.
 - `OCR_PRELOAD` (default `1`) — set `0` to skip startup warmup.
 
+## Pest detection (`POST /detect`)
+
+Runs the per-pest YOLO11 models from `pest-trap` on one trap image. It uses
+the same 1024 px tiles (0.2 overlap), per-model `conf` from
+`model_config.json`, and distance NMS as `image_group_processor_lambda.py`.
+There is no S3, no Fyllo API call and no trap-classifier gate.
+
+The weights (~385 MB) are not in this repo. Copy them in once:
+
+```bash
+cp -r ../pest-trap/pest_detection/model_r24 ./pest_models   # mounted by docker-compose
+```
+
+```bash
+curl -X POST http://localhost:8000/detect -F "file=@trap.jpg"
+curl -X POST http://localhost:8000/detect -F "file=@trap.webp" -F "models=thrips,whitefly"
+```
+
+Response: `width`, `height`, `tiles`, `device`, `detections`
+(`model, class, cx, cy, w, h, score` in original-image pixels), `counts` per
+model, and `metrics` (`bytes`, `decode_sec`, `infer_sec`, `per_model_sec`,
+`total_request_sec`). JPEG, PNG, WebP and AVIF uploads are all accepted.
+
+Env: `PEST_MODEL_DIR` (default `/code/pest_models`), `PEST_DEVICE`
+(`auto` → `cuda:0` when available), `PEST_BATCH` (tiles per predict call,
+default 16), `PEST_MAX_UPLOAD_MB` (default 60), `PEST_PRELOAD` (default `1`).
+`GET /health` lists the loaded pest models under `pest`.
+
 ## GPU
 
 ```bash

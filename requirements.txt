@@ -9,9 +9,18 @@ pymupdf>=1.23
 Pillow>=10.0
 python-multipart>=0.0.9
 numpy>=1.24
-# torch is only needed to preload DLLs on Windows (see extractor.get_ocr).
-# It is optional on Linux/Docker; uncomment if you deploy on Windows.
-# torch --index-url https://download.pytorch.org/whl/cpu
+# Pest detection (/detect). Versions mirror pest-trap/pest_detection.
+# On Linux the PyPI torch 2.6.0 wheel is the CUDA 12.4 build, so /detect
+# runs on the GPU with no extra index. On Windows install the CPU wheel
+# (--index-url https://download.pytorch.org/whl/cpu); torch also preloads
+# DLLs before paddle there (see extractor.get_ocr).
+torch==2.6.0
+torchvision==0.21.0
+ultralytics==8.4.120
+# ultralytics pulls opencv-python unpinned (5.x); paddlex brings
+# opencv-contrib-python 4.10.0.84 and both install cv2. Same version so
+# whichever wins, OCR keeps its cv2.
+opencv-python==4.10.0.84
 
 # --- GPU notes ---
 # For NVIDIA GPU inference, install the CUDA-enabled PaddlePaddle build

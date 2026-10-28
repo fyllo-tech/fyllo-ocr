@@ -11,3 +11,4 @@ venv/
 *.jpeg
 *.pdf
 *.tiff
+pest_models/
